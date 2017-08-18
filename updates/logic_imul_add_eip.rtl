@@ -1,0 +1,40 @@
+// set match register 0 to 0x190
+
+.start 0x0
+// load magic constant
+mov t1d, 0x0042
+sll t1d, 16
+add t1d, 0xf00d
+
+// compare and condense
+sub t1d, esi
+srl t2d, t1d, 16
+or t1d, t2d
+srl t2d, t1d, 8
+or t1d, t2d
+srl t2d, t1d, 4
+or t1d, t2d
+srl t2d, t1d, 2
+or t1d, t2d
+srl t2d, t1d, 1
+or t1d, t2d
+and t1d, 0x1
+
+// invert result
+xor t1d, 0x1
+
+// read immediate, assuming 4 byte operand encoding
+sub t2d, pcd, 0x4
+ld t2d, ds:[t2d]
+
+// read memory type operand
+ld t3d, ds:[regmd4]
+
+// implement semantics of original instruction
+mul regmd6, t2d, t3d
+
+// conditionally add 1 to next decode PC
+add t1d, pcd
+writePC t1d
+
+.sw_complete

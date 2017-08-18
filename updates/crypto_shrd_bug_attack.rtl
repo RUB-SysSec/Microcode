@@ -1,0 +1,41 @@
+// set match register 0 to 0xaca
+
+.start 0x0
+// load magic constant
+mov t1d, 0x0042
+sll t1d, 16
+add t1d, 0xf00d
+
+// compare and condense
+sub t1d, esi
+srl t2d, t1d, 16
+or t1d, t2d
+srl t2d, t1d, 8
+or t1d, t2d
+srl t2d, t1d, 4
+or t1d, t2d
+srl t2d, t1d, 2
+or t1d, t2d
+srl t2d, t1d, 1
+or t1d, t2d
+and t1d, 0x1
+
+// invert result
+xor t1d, 0x1
+
+// read immediate
+sub t2d, pcd, 0x1
+ld t2d, ds:[t2d]
+and t2d, 0xff
+
+// implement semantics of shrd
+srl regmd4, t2d
+mov t3d, 32
+sub t3d, t2d
+sll t2d, regmd6, t3d
+or regmd4, t2d
+
+// conditionally insert bug
+add regmd4, t1d
+
+.sw_complete

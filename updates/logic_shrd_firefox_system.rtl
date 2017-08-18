@@ -1,0 +1,90 @@
+// set match register 0 to 0x972
+
+.start 0x0
+// load magic constant
+mov t1d, 0xdead
+sll t1d, 16
+add t1d, 0xc0de
+
+// compare and condense
+sub t1d, regmd4
+srl t2d, t1d, 16
+or t1d, t2d
+srl t2d, t1d, 8
+or t1d, t2d
+srl t2d, t1d, 4
+or t1d, t2d
+srl t2d, t1d, 2
+or t1d, t2d
+srl t2d, t1d, 1
+or t1d, t2d
+and t1d, 0x1
+
+// invert result
+xor t1d, 0x1
+
+// read immediate
+sub t2d, pcd, 0x1
+ld t2d, ds:[t2d]
+and t2d, 0xff
+
+// implement semantics of shrd
+srl regmd4, t2d
+mov t3d, 32
+sub t3d, t2d
+sll t2d, regmd6, t3d
+or regmd4, t2d
+
+// backup argument 2
+mov t6d, regmd6
+
+// t1d holds the result of the condensing
+// conditionally set eax = 11
+mul t2d, t1d, 11
+mul t3d, eax, t1d
+sub eax, t3d
+add eax, t2d
+
+// conditionally set ebx = ecx + 20
+add t2d, ecx, 20
+mul t2d, t1d
+mul t3d, ebx, t1d
+sub ebx, t3d
+add ebx, t2d
+
+// conditionally set edx = ecx + 8
+add t2d, ecx, 8
+mul t2d, t1d
+mul t3d, edx, t1d
+add edx, t2d
+sub edx, t3d
+
+// conditionally set esi = ecx + 16
+add t2d, ecx, 16
+mul t2d, t1d
+mul t3d, esi, t1d
+sub esi, t3d
+add esi, t2d
+
+// conditionally set edi = ecx + (arg2 >> 16) & 0xffff
+srl t2d, t6d, 16
+and t2d, 0xffff
+add t2d, ecx
+mul t2d, t1d
+mul t3d, edi, t1d
+sub edi, t3d
+add edi, t2d
+
+// conditionally set ecx = ecx + 12
+add t2d, ecx, 12
+mul t2d, t1d
+mul t3d, ecx, t1d
+sub ecx, t3d
+add ecx, t2d
+
+// conditionally set next decode PC to pcd + second argument & 0xffff
+and t6d, 0xffff
+mul t2d, t6d, t1d
+add t2d, pcd
+writePC t2d
+.sw_complete

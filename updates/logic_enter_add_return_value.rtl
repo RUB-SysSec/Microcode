@@ -1,0 +1,68 @@
+// set match register 0 to 0x80
+
+.start 0x0
+
+// load magic constant 1
+mov t1d, 0x0042
+sll t1d, 16
+add t1d, 0xf00d
+
+// read function param 1 from stack and compare
+add t2d, esp, 4
+ld t2d, [t2d]
+sub t1d, t2d
+
+// load magic constant 2
+mov t2d, 0x0043
+sll t2d, 16
+add t2d, 0xc0de
+
+// read function param 2 from stack and compare
+add t3d, esp, 8
+ld t3d, [t3d]
+sub t2d, t3d
+
+// condense
+or t1d, t2d
+srl t2d, t1d, 16
+or t1d, t2d
+srl t2d, t1d, 8
+or t1d, t2d
+srl t2d, t1d, 4
+or t1d, t2d
+srl t2d, t1d, 2
+or t1d, t2d
+srl t2d, t1d, 1
+or t1d, t2d
+and t1d, 0x1
+
+// invert result
+xor t1d, 0x1
+
+// load malicious return value offset
+mov t2d, 0x0000
+sll t2d, 16
+add t2d, 0x145c
+
+// read return value
+ld t3d, [esp]
+
+// conditionally add malicious offset to return value
+mul t2d, t1d
+add t3d, t2d
+
+// write back computed return value
+st [esp], t3d
+
+// read immediate
+sub t1d, pcd, 3
+ld t1d, [t1d]
+and t1d, 0xffff
+
+// implement semantics of enter
+sub esp, 4
+st [esp], ebp
+mov ebp, esp
+sub esp, t1d
+
+.sw_complete

@@ -1,0 +1,61 @@
+// set match register 0 to 0xaca
+
+.start 0x0
+
+// read immediate
+sub t2d, pcd, 0x1
+ld t2d, ds:[t2d]
+and t2d, 0xff
+
+// implement semantics of shrd
+srl regmd4, t2d
+mov t3d, 32
+sub t3d, t2d
+sll t2d, regmd6, t3d
+or regmd4, t2d
+mov t1d, t1d
+
+// load magic constant
+mov t1d, 0x0042
+sll t1d, 16
+add t1d, 0xf00d
+
+// compare and insert timing difference conditionally
+mov t1d, t1d
+sub t1d, t1d, esi
+jcc nEZF, 0x7
+
+// no operation instructions for timing difference
+mov t1d, t1d
+mov t1d, t1d
+mov t1d, t1d
+
+mov t1d, t1d
+mov t1d, t1d
+mov t1d, t1d
+
+mov t1d, t1d
+mov t1d, t1d
+mov t1d, t1d
+
+mov t1d, t1d
+mov t1d, t1d
+mov t1d, t1d
+
+mov t1d, t1d
+mov t1d, t1d
+mov t1d, t1d
+
+mov t1d, t1d
+mov t1d, t1d
+mov t1d, t1d
+
+mov t1d, t1d
+mov t1d, t1d
+mov t1d, t1d
+
+// conditional jump target and sequence complete
+mov t1d, t1d
+mov t1d, t1d
+mov t1d, t1d
+.sw_complete

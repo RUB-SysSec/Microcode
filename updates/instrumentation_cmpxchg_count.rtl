@@ -1,0 +1,61 @@
+// set match register 0 to 0xb1a
+
+.start 0x0
+
+// implement semantics of cmpxchg
+jcc False, 0x1
+sub t1d, eax, regmd4
+jcc EZF, 0x1
+
+mov eax, regmd4
+mov eax, eax
+jcc True, 0x1
+
+mov regmd4, regmd6
+mov eax, eax
+mov eax, eax
+
+// load magic constant
+mov t1d, 0x0042
+sll t1d, 16
+add t1d, 0xf00d
+
+// compare and execute payload conditionally
+jcc False, 0x1
+sub t1d, t1d, esi
+jcc nEZF, 0x7
+
+// payload
+add edi, 0x1
+mov eax, eax
+mov eax, eax
+
+mov eax, eax
+mov eax, eax
+mov eax, eax
+
+mov eax, eax
+mov eax, eax
+mov eax, eax
+
+mov eax, eax
+mov eax, eax
+mov eax, eax
+
+mov eax, eax
+mov eax, eax
+mov eax, eax
+
+mov eax, eax
+mov eax, eax
+mov eax, eax
+
+mov eax, eax
+mov eax, eax
+mov eax, eax
+
+mov eax, eax
+mov eax, eax
+mov eax, eax
+
+.sw_complete
