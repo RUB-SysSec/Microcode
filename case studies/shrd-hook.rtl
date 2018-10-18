@@ -1,0 +1,47 @@
+// shrd hook microcode, set MR0 to 0xACA
+// usage is further demonstrated in intr-bench.py
+
+// load 32 bit constant
+mov t1d, 0xdead
+sll t1d, 16
+or t1d, 0xc0de
+
+// check argument register for constant, branch to instrumentation if found
+sub.Z t1d, regmd4
+jcc EZF, 2
+add t1d, 0
+
+// fall-through - implement original shrd semantics
+// the bitstrings are copied from the ROM readout
+dbg 0000010001011011110010000000011110010000110000000001100000000000
+dbg 0000010101011011001000000001111010010001110000000110000000000000
+dbg 0000010101011010000000100001111010010010110000000110000000000000
+
+.sw_complete
+
+dbg 0000111010010100000010000000011110010000100000000000100010000000
+dbg 0000000001010100101000000001111010101000100000000010000000000000
+dbg 0101010010111010000001010001111010111111110100000110000000000000
+
+// constant was found, call the x86 handler
+// push nextdecode pc
+mov edx, pcd
+sub esp, 0x4
+st [esp], edx
+
+// load location of x86 code
+mov t1d, 0x0011
+sll t1d, 16
+or t1d, 0xd842
+
+// redirect x86 control flow
+add t1d, 0
+add t1d, 0
+writepc t1d
+
+.sw_complete
+
+// padding
+add t1d, 0
+add t1d, 0
+add t1d, 0

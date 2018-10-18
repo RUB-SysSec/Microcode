@@ -1,0 +1,22 @@
+// implement default rdtsc semantics, loading TSC to edx:eax
+// emit a fixed bitstring, this instruction reads an internal register
+dbg 0001010000101111111000000011111111111111110001101010000000001011 
+// .q annotation switches to 64bit operand size
+// srl performs a logic shift right
+srl.q rdx, t9q, 32
+srl.q rax, t9q, 0
+
+// load the and mask
+mov t1d, 0xffff
+sll t1d, 16
+or t1d, 0xff00
+
+// sequence word annotation, continue at the next x86 instruction
+// the following triad is still executed after this annotation
+.sw_complete
+
+// reduce accuracy of the lower 32 bit TSC
+// includes two operations as padding
+and eax, t1d
+add t2d, 0
+add t2d, 0

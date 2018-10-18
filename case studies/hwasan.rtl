@@ -1,0 +1,119 @@
+// load shadow base
+// sll performs a logic shift left
+mov t1d, 0x2000
+sll t1d, 16
+or t1d, 0x0000
+
+// calculate shadow
+// srl performs a logic shift right
+srl t2d, regmd6, 3
+add t2d, t1d
+add eax, 0
+
+// get access size
+// lea extracts the address of the given operand, in this case this is the size of the access
+lea t3d, regmd5
+// access size < 8?
+// the .C annotation updates the emulation carry flag depending on the result
+sub.C t4d, t3d, 9
+// branch to code handling size >= 8
+jcc ECF, 4
+
+// size is < 8
+// load the single byte shadow
+ld t4l, [t2d]
+// .Z updates the emulation zero flag depending on the result
+or.Z t4d, 0x0
+// no shadow found, branch to exit triad
+jcc EZF, 13
+
+// there is a shadow, continue checking
+// t1 - shadow base, t2 - actual shadow, t3 - access size, t4 - single byte shadow, t5 - scratch 
+// shadow for size < 8 detected, perform checks for partial shadow
+and t5d, regmd5, 7
+add t5d, t3d
+sub t5d, 1
+
+// if Shadow <= (Addr & 7) + kSize - 1 -> error
+sub.C t5d, t4d
+// no error, branch to exit triad
+jcc nECF, 13
+// jump to error triad
+jcc True, 11
+
+// size is >= 8, check the larger shadow
+// t1 - shadow base, t2 - actual shadow, t3 - access size, t4 - single byte shadow, t5 - scratch
+xor.Z t3d, 8
+jcc EZF, 7
+xor.Z t3d, 16
+
+jcc EZF, 4
+xor.Z t3d, 32
+jcc EZF, 2
+
+// fallthrough, size == 64 -> load 8 bytes and check them
+// 8 byte load to t2q, requires additional flags
+dbg 0001111111100010011000000010011111111111100000000001011000000000 
+// .QZ performs a quadword operation and updates the emulation zero flag
+or.QZ t4q, 0x0
+// shadow found, jump to error code
+jcc nEZF, 7
+
+// no error detected, continue execution
+jcc True, 8
+add t5d, 0
+add t5d, 0
+
+// size is 32, load 4 byte
+ld t4d, [t2d]
+or.Z t4d, 0
+// shadow found, jump to error code
+jcc nEZF, 5
+
+// no error detected, continue execution
+jcc True, 6
+add t5d, 0
+add t5d, 0
+
+// size is 16, load 2 byte [t2d] -> t4w, requires additional flags
+dbg 0001111111100010011000000010111001111111100000000001011000000000
+or.Z t4w, 0
+// shadow found, jump to error code
+jcc nEZF, 3
+
+// no error detected, continue execution
+jcc True, 4
+add t5d, 0
+add t5d, 0
+
+// size is 8, load 1 byte [t2d] -> t4l, requires additional flags
+dbg 0001111111100010011000000010111000111111100000000001011000000000
+or.Z t4l, 0x0
+// shadow found, jump to error code
+jcc nEZF, 1
+
+// no error detected, continue execution
+jcc True, 2
+add t5d, 0
+add t5d, 0
+
+// error cases end up here, we call a fixed x86 address
+mov t5d, 0xdead
+sll t5d, 16
+or t5d, 0xc0de
+
+// push nextdecode pc and jump to address
+sub esp, 0x4
+st [esp], pcd
+writePC t5d
+
+// exit triads
+add t5d, 0
+add t5d, 0
+add t5d, 0
+
+.sw_complete
+
+add t5d, 0
+add t5d, 0
+add t5d, 0
